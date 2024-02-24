@@ -35,6 +35,17 @@ const productSchema = new mongoose.Schema({
         trim: true,
         maxlength: 100,
     },
+    images: {
+        type: [{
+            type: String,
+        }],
+        validate: {
+            validator: function (images) {
+                return images && images.length > 0;
+            },
+            message: 'At least one image is required.'
+        }
+    }
 }, { timestamps: true });
 
 const Product = mongoose.model('Product', productSchema);

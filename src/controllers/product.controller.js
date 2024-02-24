@@ -3,8 +3,8 @@ const Product = require("../models/product.model");
 
 const createProduct = async (req, res, next) => {
     try {
-        console.log(":: createProduct");
-        const newProduct = new Product(req.body);
+        const images = req.files.map(file => '/uploads/' + file.filename);
+        const newProduct = new Product({ ...req.body, images });
         const validationError = newProduct.validateSync();
         if (validationError) {
             res.status(400).json({ error: validationError.message, success: false });
@@ -27,7 +27,6 @@ const findProduct = async (req, res, next) => {
             res.send({ success: true, data: product });
         else
             res.status(400).send({ success: false, error: 'Invalid product id' });
-
     } catch (error) {
         console.log("error", error.message);
         res.status(500).send({ success: false, error: error.message });
