@@ -1,6 +1,7 @@
 const { default: mongoose } = require("mongoose");
 const Product = require("../models/product.model");
-
+const path = require("path");
+const fs = require('fs');
 const createProduct = async (req, res, next) => {
     try {
         const images = req.files.map(file => '/uploads/' + file.filename);
@@ -47,12 +48,9 @@ const updateProduct = async (req, res, next) => {
     try {
         if (!req.params.id) throw new Error('Missing id in url params');
         if (!mongoose.isValidObjectId(req.params.id)) throw new Error('Invalid product ID');
-        const product = new Product(req.body);
-        const validationError = product.validateSync();
-        if (validationError) {
-            res.status(400).json({ error: validationError.message });
-        }
-        const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const images = req.files.map(file => '/uploads/' + file.filename);
+        const product = { ...req.body, images };
+        const updatedProduct = await Product.findByIdAndUpdate(req.params.id, product, { new: true });
         if (updatedProduct)
             res.send({ success: true, data: updatedProduct });
         else
@@ -79,4 +77,30 @@ const deleteProduct = async (req, res, next) => {
     }
 };
 
-module.exports = { createProduct, findProduct, findProducts, updateProduct, deleteProduct };
+const deleteImage = async (req, res, next) => {
+    // const { filename } = req.params;
+    const { id, filename } = req.query;
+    console.log(id, filename);
+    const currDir = __dirname;
+    const dir = path.join(currDir, '../../');
+    const imagePath = path.join(dir, 'uploads', filename);
+
+    try {
+        // await fs.access(imagePath, (error) => {
+        //     console.log("error,", error);
+        // });
+
+        await fs.unlink(imagePath, async () => {
+            // res.json({ success: true, message: 'Image deleted successfully' });
+            const up = await Product.findByIdAndUpdate(id,
+                { $pull: { images: filename } }, { new: true }
+            );
+            res.send({ data: 'Image deleted', success: true });
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Failed to delete image' });
+    }
+};
+
+module.exports = { createProduct, findProduct, findProducts, updateProduct, deleteProduct, deleteImage };
